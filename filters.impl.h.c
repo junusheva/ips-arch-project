@@ -112,7 +112,7 @@ static inline void filters_apply_brightness_contrast(
 #elif defined x86_64_CPU
 
     __asm__ __volatile__ (
-        "subq $0x18, %%rsp\n\t"
+        "subq $0x38, %%rsp\n\t"
 
         "xorq %%rax, %%rax\n\t"
 
@@ -171,7 +171,7 @@ static inline void filters_apply_brightness_contrast(
         "cmovbq %%r8, %%rax\n\t"
         "movb %%al, 0x2(%2,%3)\n\t"
 
-        "addq $0x18, %%rsp\n\t"
+        "addq $0x38, %%rsp\n\t"
     ::
         "S"(&brightness), "D"(&contrast),
         "b"(pixels), "c"(position)
