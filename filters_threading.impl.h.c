@@ -159,7 +159,7 @@ static void filters_brightness_contrast_processing_task(
         3;
 #endif
 
-    for (size_t linear_position = 0; linear_position < end; linear_position += step) {
+    for (; linear_position < end; linear_position += step) {
         filters_apply_brightness_contrast(
             pixels, linear_position,
             brightness, contrast
@@ -198,7 +198,7 @@ static void filters_sepia_processing_task(
         3;
 #endif
 
-    for (size_t linear_position = 0; linear_position < end; linear_position += step) {
+    for (; linear_position < end; linear_position += step) {
         filters_apply_sepia(pixels, linear_position);
     }
 
@@ -235,7 +235,7 @@ static void filters_median_processing_task(
     size_t step =
         3;
 
-    for (size_t linear_position = 0; linear_position < end; linear_position += step) {
+    for (; linear_position < end; linear_position += step) {
         size_t x =
             (linear_position / 3) % image_width;
         size_t y =

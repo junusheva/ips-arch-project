@@ -1,6 +1,8 @@
 #include "filters.h"
 #include "utils.h"
 
+#include <immintrin.h>
+
 /*
     // AT&T/UNIX GCC Inline Assembly Sample
 
@@ -88,7 +90,7 @@ static inline void filters_apply_brightness_contrast(
 {
 #if !defined FILTERS_C_IMPLEMENTATION       && \
     !defined FILTERS_X87_ASM_IMPLEMENTATION && \
-    !defined FILTERS_ASM_IMPLEMENTATION
+    !defined FILTERS_SIMD_ASM_IMPLEMENTATION
 #define FILTERS_C_IMPLEMENTATION 1
 #endif
 
@@ -259,8 +261,19 @@ static inline void filters_apply_brightness_contrast(
 
 #elif defined x86_64_CPU
 
+    // Similar, but not a one to one conversion of the C code above. Try to find in what way.
     __asm__ __volatile__ (
-        "\n\t" :::
+        "vbroadcastss (%0), %%zmm2\n\t"
+        "vbroadcastss (%1), %%zmm1\n\t"
+        "vpmovzxbd (%2, %3), %%zmm0\n\t"
+        "vcvtdq2ps %%zmm0, %%zmm0\n\t"
+        "vfmadd132ps %%zmm1, %%zmm2, %%zmm0\n\t"
+        "vcvtps2dq %%zmm0, %%zmm0\n\t"
+        "vpmovusdb %%zmm0, (%2, %3)\n\t"
+    ::
+        "S"(&brightness), "D"(&contrast), "b"(pixels), "c"(position)
+    :
+        "%rax", "%k1", "%zmm0", "%zmm1", "%zmm2"
     );
 
 #else

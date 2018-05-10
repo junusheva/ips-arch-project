@@ -45,7 +45,7 @@ ips_c_optimized : ${SOURCES} $(HEADERS)
 	$(CC) $(CFLAGS) -DFILTERS_C_IMPLEMENTATION -O3 -ffast-math -flto -o $@ $< $(LDLIBS)
 
 ips_asm_optimized : ${SOURCES} $(HEADERS)
-	$(CC) $(CFLAGS) -DFILTERS_SIMD_ASM_IMPLEMENTATION -O3 -ffast-math -flto -o $@ $< $(LDLIBS)
+	$(CC) $(CFLAGS) -DFILTERS_SIMD_ASM_IMPLEMENTATION -mavx512f -o $@ $< $(LDLIBS)
 
 .PHONY: profile
 profile : $(EXECUTABLES)
