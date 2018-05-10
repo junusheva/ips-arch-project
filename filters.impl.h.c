@@ -261,7 +261,7 @@ static inline void filters_apply_brightness_contrast(
 
 #elif defined x86_64_CPU
 
-    // Similar, but not a one to one conversion of the C code above. Try to find in what way.
+    // Process 16 color channels at the same time.
     __asm__ __volatile__ (
         "vbroadcastss (%0), %%zmm2\n\t"
         "vbroadcastss (%1), %%zmm1\n\t"
