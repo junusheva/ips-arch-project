@@ -273,7 +273,7 @@ static inline void filters_apply_brightness_contrast(
     ::
         "S"(&brightness), "D"(&contrast), "b"(pixels), "c"(position)
     :
-        "%rax", "%k1", "%zmm0", "%zmm1", "%zmm2"
+        "%zmm0", "%zmm1", "%zmm2"
     );
 
 #else
