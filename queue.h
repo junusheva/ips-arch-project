@@ -38,7 +38,14 @@ static inline queue_t *queue_create(void);
 
 static inline void queue_destroy(queue_t *queue);
 
+static inline void queue_deinit(queue_t *queue);
+
 static inline void queue_destroy_with_elements(
+                       queue_t *queue,
+                       queue_destroy_element_callback destroy_element_callback
+                   );
+
+static inline void queue_deinit_with_elements(
                        queue_t *queue,
                        queue_destroy_element_callback destroy_element_callback
                    );

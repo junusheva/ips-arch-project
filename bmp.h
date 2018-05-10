@@ -15,6 +15,8 @@ static const char *BMP_Error_Invalid_File_Descriptor =
                     "Invalid bitmap file signature",
                   *BMP_Error_Failed_to_Read_DIB_Header =
                     "Failed to read the DIB header",
+                  *BMP_Error_Failed_to_Seek_Inside_DIB_Header =
+                    "Failed to seek inside of the DIB header",
                   *BMP_Error_Unsupported_Color_Depth =
                     "Invalid color depth (not 24 bits per pixel)",
                   *BMP_Error_Invalid_Size_Information =
@@ -77,11 +79,13 @@ typedef struct _bmp_image
     uint8_t *payload;
 
     /* Convenience Variables */
-    uint8_t *pixels;                /* start of pixel array in payload  */
-    size_t absolute_image_width;    /* abs(dib_header.image_width)      */
-    size_t absolute_image_height;   /* abs(dib_header.image_height)     */
-    size_t pixel_row_padding;       /* the padding after each row of pixels      */
-    size_t image_size;              /* the total size of the image part in bytes */
+    uint8_t *raw_pixels;            /* start of pixel array in the payload                               */
+    uint8_t *pixels;                /* start of pixel array without padding aligned on a 64-bit boundary */
+    size_t absolute_image_width;    /* abs(dib_header.image_width)                                       */
+    size_t absolute_image_height;   /* abs(dib_header.image_height)                                      */
+    size_t pixel_row_padding;       /* the padding after each row of pixels                              */
+    size_t image_size;              /* the total size of the image part in bytes                         */
+    size_t aligned_image_size;      /* the total size of the aligned image part without padding          */
 } bmp_image;
 
 static inline void bmp_init_image_structure(bmp_image *image);
@@ -113,6 +117,14 @@ static void bmp_write_image_data(
 
 static inline uint8_t *bmp_sample_pixel(
                            uint8_t *pixels,
+                           ssize_t x,
+                           ssize_t y,
+                           size_t absolute_image_width,
+                           size_t absolute_image_height
+                       );
+
+static inline uint8_t *bmp_sample_raw_pixel(
+                           uint8_t *raw_pixels,
                            ssize_t x,
                            ssize_t y,
                            size_t absolute_image_width,

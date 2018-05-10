@@ -14,9 +14,15 @@ static inline void bmp_init_image_structure(bmp_image *image)
 
 static inline void bmp_free_image_structure(bmp_image *image)
 {
-    if (NULL != image && NULL != image->payload) {
-        free(image->payload);
-        image->payload = NULL;
+    if (NULL != image) {
+        if (NULL != image->payload) {
+            free(image->payload);
+            image->payload = NULL;
+        }
+        if (NULL != image->pixels) {
+            free(image->pixels);
+            image->pixels = NULL;
+        }
     }
 }
 
@@ -76,6 +82,19 @@ static void bmp_open_image_headers(
         goto end;
     }
 
+    ssize_t temp =
+        image->dib_header.dib_header_size - dib_header_size;
+    size_t rest_dib_header_size =
+        temp > 0 ? temp : 0;
+
+    if (-1 == fseek(file_descriptor, rest_dib_header_size, SEEK_CUR)) {
+        if (NULL != error_message) {
+            *error_message = BMP_Error_Failed_to_Seek_Inside_DIB_Header;
+        }
+
+        goto end;
+    }
+
     if (24 != image->dib_header.bits_per_pixel) {
         if (NULL != error_message) {
             *error_message = BMP_Error_Unsupported_Color_Depth;
@@ -123,7 +142,7 @@ static void bmp_read_image_data(
     size_t bmp_header_size =
         sizeof(image->file_header);
     size_t dib_header_size =
-        sizeof(image->dib_header);
+        image->dib_header.dib_header_size;
     size_t total_header_size =
         bmp_header_size + dib_header_size;
 
@@ -160,7 +179,7 @@ static void bmp_read_image_data(
         goto cleanup;
     }
 
-    image->pixels =
+    image->raw_pixels =
         &image->payload[first_pixel_index];
 
     size_t width =
@@ -196,6 +215,32 @@ static void bmp_read_image_data(
         goto cleanup;
     }
 
+    size_t alignment = 64;
+    size_t aligned_image_size = (((image->image_size - 1) / alignment) + 1) * alignment;
+    aligned_image_size += 64;
+
+    image->pixels = (uint8_t *) aligned_alloc(64, aligned_image_size);
+    if (NULL == image->payload) {
+        if (NULL != error_message) {
+            *error_message = BMP_Error_Not_Enough_Memory_to_Read;
+        }
+
+        goto cleanup;
+    }
+    image->aligned_image_size = aligned_image_size;
+
+    for (size_t y = 0, linear_position = 0; y < height; ++y, linear_position += row_size + padding) {
+        memcpy(
+            image->pixels + linear_position,
+            image->raw_pixels + linear_position,
+            row_size
+        );
+    }
+
+    for (size_t linear_position = image->image_size; linear_position < aligned_image_size; ++linear_position) {
+        image->pixels[linear_position] = 0;
+    }
+
 end:
     return;
 
@@ -204,6 +249,11 @@ cleanup:
     {
         free(image->payload);
         image->payload = NULL;
+    }
+    if (NULL != image->pixels)
+    {
+        free(image->pixels);
+        image->pixels = NULL;
     }
 }
 
@@ -290,6 +340,31 @@ static void bmp_write_image_data(
 
     size_t payload_size =
         ((size_t) image->file_header.file_size) - total_header_size;
+    size_t padding =
+        image->pixel_row_padding;
+
+    size_t width =
+        image->absolute_image_width;
+    size_t height =
+        image->absolute_image_height;
+    size_t row_size =
+        width * 3;
+
+    for (
+        size_t y = 0,
+               src_linear_position  = 0,
+               dest_linear_position = 0;
+        y < height;
+        ++y,
+        src_linear_position += row_size,
+        dest_linear_position += row_size + padding
+    ) {
+        memcpy(
+            image->raw_pixels + dest_linear_position,
+            image->pixels + src_linear_position,
+            row_size
+        );
+    }
 
     if (!fwrite(image->payload, payload_size, 1, file_descriptor)) {
         if (NULL != error_message) {
@@ -308,6 +383,22 @@ static inline uint8_t *bmp_sample_pixel(
                            ssize_t x,
                            ssize_t y,
                            size_t absolute_image_width,
+                           size_t absolute_image_height
+                       )
+{
+    size_t ux =
+        (size_t) (UTILS_CLAMP(x, 0, (ssize_t) absolute_image_width - 1));
+    size_t uy =
+        (size_t) (UTILS_CLAMP(y, 0, (ssize_t) absolute_image_height - 1));
+
+    return &pixels[uy * (absolute_image_width * 3) + ux * 3];
+}
+
+static inline uint8_t *bmp_sample_raw_pixel(
+                           uint8_t *raw_pixels,
+                           ssize_t x,
+                           ssize_t y,
+                           size_t absolute_image_width,
                            size_t absolute_image_height,
                            size_t row_padding
                        )
@@ -317,6 +408,6 @@ static inline uint8_t *bmp_sample_pixel(
     size_t uy =
         (size_t) (UTILS_CLAMP(y, 0, (ssize_t) absolute_image_height - 1));
 
-    return &pixels[uy * (absolute_image_width * 3 + row_padding) + ux * 3];
+    return &raw_pixels[uy * (absolute_image_width * 3 + row_padding) + ux * 3];
 }
 

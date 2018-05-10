@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 
     /* Main Image Processing Loop */
     {
-        static volatile size_t rows_left =
+        static volatile ssize_t channels_left =
             0;
         static volatile bool barrier_sense =
             false;
@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
 
         uint8_t *original_pixels = NULL;
         if (filter_id == FILTERS_MEDIAN_ID) {
-            original_pixels = (uint8_t *) malloc(image.image_size);
+            original_pixels = (uint8_t *) aligned_alloc(64, image.aligned_image_size);
             if (NULL == original_pixels) {
                 fprintf(
                     stderr,
@@ -241,74 +241,73 @@ int main(int argc, char *argv[])
                 goto cleanup;
             }
 
-            memcpy(original_pixels, pixels, image.image_size);
+            memcpy(original_pixels, pixels, image.aligned_image_size);
         }
 
         size_t width =
             image.absolute_image_width;
         size_t height =
             image.absolute_image_height;
-        size_t row_padding =
-            image.pixel_row_padding;
-        size_t rows_per_thread =
-            height / pool_size;
-        size_t linear_position_step =
-            rows_per_thread * (width * 3 + row_padding);
+        size_t channels_count =
+            width * height * 3;
+        size_t channels_per_thread =
+            channels_count / pool_size;
+#if defined FILTERS_SIMD_ASM_IMPLEMENTATION
+        channels_per_thread =
+            ((channels_per_thread - 1) / 16 + 1) * 16;
+#else
+        channels_per_thread =
+            ((channels_per_thread - 1) / 3 + 1) * 3;
+#endif
 
 PROFILER_START(1)
-        rows_left =
-            height;
+        channels_left =
+            (ssize_t) channels_count;
         barrier_sense =
             false;
 
         for (
-            size_t y = 0, linear_position = 0;
-            y < height;
-            y += rows_per_thread, linear_position += linear_position_step
+            size_t linear_position = 0;
+            linear_position < channels_count;
+            linear_position += channels_per_thread
         ) {
-            size_t rows_to_process =
-                y + rows_per_thread > height ?
-                    (height - y) :
-                     rows_per_thread;
+            size_t channels_to_process =
+                linear_position + channels_per_thread > channels_count ?
+                    channels_count - linear_position :
+                    channels_per_thread;
 
             void *task_data;
             switch (filter_id) {
                 case FILTERS_BRIGHTNESS_CONTRAST_ID:
                     task_data =
                         filters_brightness_contrast_data_create(
-                            linear_position, row_padding,
-                            0, y,
-                            width,
-                            rows_to_process,
+                            linear_position,
+                            channels_to_process,
                             pixels,
                             brightness, contrast,
-                            &rows_left,
+                            &channels_left,
                             &barrier_sense
                         );
                     break;
                 case FILTERS_SEPIA_ID:
                     task_data =
                         filters_sepia_data_create(
-                            linear_position, row_padding,
-                            0, y,
-                            width,
-                            rows_to_process,
+                            linear_position,
+                            channels_to_process,
                             pixels,
-                            &rows_left,
+                            &channels_left,
                             &barrier_sense
                         );
                     break;
                 case FILTERS_MEDIAN_ID:
                     task_data =
                         filters_median_data_create(
-                            linear_position, row_padding,
-                            0, y,
-                            width,
-                            rows_to_process,
+                            linear_position,
+                            channels_to_process,
                             width, height,
                             original_pixels,
                             pixels,
-                            &rows_left,
+                            &channels_left,
                             &barrier_sense
                         );
                     break;
@@ -329,6 +328,11 @@ PROFILER_START(1)
 
         while (!barrier_sense) { }
 PROFILER_STOP();
+
+        if (NULL != original_pixels) {
+            free(original_pixels);
+            original_pixels = NULL;
+        }
     }
 
     bmp_write_image_data(destination_descriptor, &image, &error_message);

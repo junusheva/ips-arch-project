@@ -8,7 +8,7 @@
 #define FILTERS_SEPIA_ID               1
 #define FILTERS_MEDIAN_ID              2
 
-#define FILTERS_MEDIAN_WINDOW_SIZE 20
+#define FILTERS_MEDIAN_WINDOW_SIZE 3
 
 static inline void filters_apply_brightness_contrast(
                        uint8_t *pixels,
@@ -29,8 +29,7 @@ static inline void filters_apply_median(
                        size_t x,
                        size_t y,
                        size_t width,
-                       size_t height,
-                       size_t padding
+                       size_t height
                    );
 
 #include "filters.impl.h.c"

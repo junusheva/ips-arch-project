@@ -105,12 +105,78 @@ static inline void filters_apply_brightness_contrast(
 
 #if defined x86_32_CPU
 
+    // Similar, but not a one to one conversion of the C code above. Try to find in what way.
     __asm__ __volatile__ (
-        "\n\t" :::
+        "subl $0x1c, %%esp\n\t"
+
+        "xorl %%eax, %%eax\n\t"
+
+        "movb (%2,%3), %%al\n\t"
+        "movl %%eax, (%%esp)\n\t"
+
+        "movb 0x1(%2,%3), %%al\n\t"
+        "movl %%eax, 0x4(%%esp)\n\t"
+
+        "movb 0x2(%2,%3), %%al\n\t"
+        "movl %%eax, 0x8(%%esp)\n\t"
+
+        "fildl (%%esp)\n\t"
+        "fildl 0x4(%%esp)\n\t"
+        "fildl 0x8(%%esp)\n\t"
+
+        "flds (%1)\n\t"
+        "fmulp\n\t"
+        "flds (%0)\n\t"
+        "faddp\n\t"
+        "fistpl 0x8(%%esp)\n\t"
+
+        "flds (%1)\n\t"
+        "fmulp\n\t"
+        "flds (%0)\n\t"
+        "faddp\n\t"
+        "fistpl 0x4(%%esp)\n\t"
+
+        "flds (%1)\n\t"
+        "fmulp\n\t"
+        "flds (%0)\n\t"
+        "faddp\n\t"
+        "fistpl (%%esp)\n\t"
+
+        "movl $0xff, %%edx\n\t"
+        "movl $0x0, %%edi\n\t"
+
+        "movl (%%esp), %%eax\n\t"
+        "cmpl %%edx, %%eax\n\t"
+        "cmoval %%edx, %%eax\n\t"
+        "cmpl %%edi, %%eax\n\t"
+        "cmovbl %%edi, %%eax\n\t"
+        "movb %%al, (%2,%3)\n\t"
+
+        "movl 0x4(%%esp), %%eax\n\t"
+        "cmpl %%edx, %%eax\n\t"
+        "cmoval %%edx, %%eax\n\t"
+        "cmpl %%edi, %%eax\n\t"
+        "cmovbl %%edi, %%eax\n\t"
+        "movb %%al, 0x1(%2,%3)\n\t"
+
+        "movl 0x8(%%esp), %%eax\n\t"
+        "cmpl %%edx, %%eax\n\t"
+        "cmoval %%edx, %%eax\n\t"
+        "cmpl %%edi, %%eax\n\t"
+        "cmovbl %%edi, %%eax\n\t"
+        "movb %%al, 0x2(%2,%3)\n\t"
+
+        "addl $0x1c, %%esp\n\t"
+    ::
+        "S"(&brightness), "D"(&contrast),
+        "b"(pixels), "c"(position)
+    :
+        "%eax", "%edx"
     );
 
 #elif defined x86_64_CPU
 
+    // Similar, but not a one to one conversion of the C code above. Try to find in what way.
     __asm__ __volatile__ (
         "subq $0x38, %%rsp\n\t"
 
@@ -258,7 +324,6 @@ static inline void filters_apply_sepia(
         "subl $0x14, %%esp\n\t"
 
         "xorl %%eax, %%eax\n\t"
-        "movl $0xff, %%edx\n\t"
 
         "movb (%1,%2), %%al\n\t"
         "movl %%eax, (%%esp)\n\t"
@@ -269,31 +334,31 @@ static inline void filters_apply_sepia(
         "filds (%%esp)\n\t"
         "filds 0x4(%%esp)\n\t"
 
-        "fldl (%0)\n\t"
+        "flds (%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x8(%0)\n\t"
+        "flds 0x4(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x10(%0)\n\t"
+        "flds 0x8(%0)\n\t"
         "fmul %%st(4), %%st\n\t"
         "faddp\n\t"
         "faddp\n\t"
         "fistpl 0x8(%%esp)\n\t"
 
-        "fldl 0x18(%0)\n\t"
+        "flds 0xc(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x20(%0)\n\t"
+        "flds 0x10(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x28(%0)\n\t"
+        "flds 0x14(%0)\n\t"
         "fmul %%st(4), %%st\n\t"
         "faddp\n\t"
         "faddp\n\t"
         "fistpl 0xc(%%esp)\n\t"
 
-        "fldl 0x30(%0)\n\t"
+        "flds 0x18(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x38(%0)\n\t"
+        "flds 0x1c(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x40(%0)\n\t"
+        "flds 0x20(%0)\n\t"
         "fmul %%st(4), %%st\n\t"
         "faddp\n\t"
         "faddp\n\t"
@@ -301,6 +366,8 @@ static inline void filters_apply_sepia(
 
         "fstp %%st\n\t"
         "fstp %%st\n\t"
+
+        "movl $0xff, %%edx\n\t"
 
         "movl 0x8(%%esp), %%eax\n\t"
         "cmpl %%edx, %%eax\n\t"
@@ -332,7 +399,6 @@ static inline void filters_apply_sepia(
         "subq $0x28, %%rsp\n\t"
 
         "xorq %%rax, %%rax\n\t"
-        "movq $0xff, %%rdx\n\t"
 
         "movb (%1,%2), %%al\n\t"
         "movq %%rax, (%%rsp)\n\t"
@@ -343,31 +409,31 @@ static inline void filters_apply_sepia(
         "fildl (%%rsp)\n\t"
         "fildl 0x8(%%rsp)\n\t"
 
-        "fldl (%0)\n\t"
+        "flds (%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x8(%0)\n\t"
+        "flds 0x4(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x10(%0)\n\t"
+        "flds 0x8(%0)\n\t"
         "fmul %%st(4), %%st\n\t"
         "faddp\n\t"
         "faddp\n\t"
         "fistpq 0x10(%%rsp)\n\t"
 
-        "fldl 0x18(%0)\n\t"
+        "flds 0xc(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x20(%0)\n\t"
+        "flds 0x10(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x28(%0)\n\t"
+        "flds 0x14(%0)\n\t"
         "fmul %%st(4), %%st\n\t"
         "faddp\n\t"
         "faddp\n\t"
         "fistpq 0x18(%%rsp)\n\t"
 
-        "fldl 0x30(%0)\n\t"
+        "flds 0x18(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x38(%0)\n\t"
+        "flds 0x1c(%0)\n\t"
         "fmul %%st(2), %%st\n\t"
-        "fldl 0x40(%0)\n\t"
+        "flds 0x20(%0)\n\t"
         "fmul %%st(4), %%st\n\t"
         "faddp\n\t"
         "faddp\n\t"
@@ -375,6 +441,8 @@ static inline void filters_apply_sepia(
 
         "fstp %%st\n\t"
         "fstp %%st\n\t"
+
+        "movq $0xff, %%rdx\n\t"
 
         "movq 0x10(%%rsp), %%rax\n\t"
         "cmpq %%rdx, %%rax\n\t"
@@ -436,8 +504,7 @@ static inline void filters_apply_median(
                        size_t x,
                        size_t y,
                        size_t width,
-                       size_t height,
-                       size_t padding
+                       size_t height
                    )
 {
 #if !defined FILTERS_C_IMPLEMENTATION &&     \
@@ -475,8 +542,7 @@ static inline void filters_apply_median(
                         adjusted_x,
                         adjusted_y,
                         width,
-                        height,
-                        padding
+                        height
                     )[channel];
             }
         }
@@ -489,15 +555,15 @@ static inline void filters_apply_median(
 
 #if defined x86_32_CPU
 
-    __asm__ __volatile__ (
-        "\n\t" :::
-    );
+        __asm__ __volatile__ (
+            "\n\t" :::
+        );
 
 #elif defined x86_64_CPU
 
-    __asm__ __volatile__ (
-        "\n\t" :::
-    );
+        __asm__ __volatile__ (
+            "\n\t" :::
+        );
 
 #else
 #error "Unsupported processor architecture"

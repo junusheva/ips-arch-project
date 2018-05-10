@@ -62,9 +62,27 @@ static inline void queue_destroy(queue_t *queue)
 {
     queue_item_t *item;
 
-    if (NULL != queue) {
-        for (item = queue->first; item; free(item), item = item->next);
+    if (queue) {
+        for (item = queue->first; item;) {
+            queue_item_t *next = item->next;
+            free(item);
+            item = next;
+        }
+
         free(queue);
+    }
+}
+
+static inline void queue_deinit(queue_t *queue)
+{
+    queue_item_t *item;
+
+    if (queue) {
+        for (item = queue->first; item;) {
+            queue_item_t *next = item->next;
+            free(item);
+            item = next;
+        }
     }
 }
 
@@ -75,9 +93,31 @@ static inline void queue_destroy_with_elements(
 {
     queue_item_t *item;
 
-    if (NULL != queue) {
-        for (item = queue->first; item; destroy_element_callback(item->content), free(item), item = item->next);
+    if (queue) {
+        for (item = queue->first; item;) {
+            queue_item_t *next = item->next;
+            destroy_element_callback(item->content);
+            free(item);
+            item = next;
+        }
         free(queue);
+    }
+}
+
+static inline void queue_deinit_with_elements(
+                       queue_t *queue,
+                       queue_destroy_element_callback destroy_element_callback
+                   )
+{
+    queue_item_t *item;
+
+    if (queue) {
+        for (item = queue->first; item;) {
+            queue_item_t *next = item->next;
+            destroy_element_callback(item->content);
+            free(item);
+            item = next;
+        }
     }
 }
 

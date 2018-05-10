@@ -283,6 +283,8 @@ make profile
 * [X86 Instruction Reference](http://www.felixcloutier.com/x86)
 * [Optimizing Subroutines in Assembly Language](http://www.agner.org/optimize/optimizing_assembly.pdf)
 * [Jump Quick Reference](http://unixwiz.net/techtips/x86-jumps.html)
+* [SIMD Basics](https://www.codeproject.com/Articles/874396/Crunching-Numbers-with-AVX-and-AVX)
+* [SIMD Intrinsics Guide](https://software.intel.com/sites/landingpage/IntrinsicsGuide)
 
 ### Assemblers
 
