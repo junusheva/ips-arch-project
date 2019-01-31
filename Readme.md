@@ -93,11 +93,11 @@ speed-up the solution as in the second part of the project.
 
 1. Find the coefficients you need to use in your work in the paper.
 
-2. Use the provided template, and specifically modify the
-   `filters_apply_sepia(...)` function by inserting inline GCC assembly to your
+2. Use the provided template, and modify the
+   `filters_apply_sepia(...)` function by inserting inline GCC assembly into your
    code. If you do not like GCC inline assembly, you can create a separate
-   assembly `.s` file, modify the build rules in `Makefile` to assemble the file
-   separately and then to link it with the other `.o` files from C. Do not
+   `.s` assembly file, modify the build rules in `Makefile` to assemble the file
+   separately and then link it with the other `.o` files from C. Do not
    forget to perform a call to your assembly function from the C file.
 
 3. Benchmark your solution, by compiling and running `make profile`.
@@ -111,7 +111,7 @@ speed-up the solution as in the second part of the project.
 
 ## Part 4, The Median Filter
 
-In this part of the project, you will have to accelerate execution of an image
+In this part of the project, you will have to accelerate the execution of an image
 processing filter, called a median filter.  The median filter is used to remove
 noise from a signal (e.g., a 1D audio signal or a 2D image data signal). It does
 so by replacing each pixel value (or channel value) with a median of neighboring
@@ -120,7 +120,7 @@ entry by entry, over the signal. For 1D signal, the window is just a list of
 values to the left and to the right of the data point being filtered. For 2D
 signals, the window can be represented by different shapes to get different
 filtering results. For example, the shape could be a box or a cross that is
-centered over the pixel (or channel) being processed. Note that median is the
+centered over the pixel (or channel) being processed. Note that the median is the
 middle value separating the greater and lesser halves of a sorted data set.
 
 As you can understand, sorting pixel values of a sliding window is a probable
@@ -166,7 +166,7 @@ get a full grade.
 4. If everything works, and you got a speed-up, write a
    `Readme_Student_Part_4.md` file. Throughout your work, you should be keeping
    notes about your development process. What I would like to see is: how you
-   implemented your functionality, what kind of speed-up you got, and challenges
+   implemented your functionality, what kind of speed-up you got, and the challenges
    you experienced. Here, you can also clearly document your reference
    materials.
 
