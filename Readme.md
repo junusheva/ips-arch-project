@@ -153,7 +153,7 @@ get a full grade.
 1. Read the paper, try to understand it, find out the bits that you need to use
    in your work.
 
-2. Use the provided template, and specifically modify the
+2. Use the provided template, and modify the
    `filters_apply_median(...)` function by inserting inline GCC assembly to
    accelerate your code. If you do not like GCC inline assembly, you can create
    a separate assembly `.s` file, modify the build rules in `Makefile` to
